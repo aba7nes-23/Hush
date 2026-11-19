@@ -1,0 +1,29 @@
+kind = "video"
+videoAspectRatio = "16:9"
+previewPath = "/hush-film/"
+title = "Hush — Private Conversations"
+description = "A short animated product film introducing Hush, an account-free mobile app for temporary encrypted conversations, peer-to-peer file sharing, and voice or video calls."
+version = "1.0.0"
+id = "artifacts/hush-film"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/hush-film/" ]
+localPort = 24507
+
+[services.development]
+run = "pnpm --filter @workspace/hush-film run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hush-film", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/hush-film/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24507"
+BASE_PATH = "/hush-film/"
