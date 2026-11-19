@@ -1,45 +1,40 @@
-/**
- * Hush palette — "lamplit pine".
- * Warm unbleached paper, deep pine ink, and a single ember accent
- * that only appears when something wants your attention.
- */
+/** Hush terminal palette — deep pine, phosphor green, and a restrained ember. */
 const colors = {
   light: {
-    text: '#17302A',
-    tint: '#1F4A3C',
+    text: '#E7F0E9',
+    tint: '#84D6A0',
 
-    background: '#F2EDE2',
-    foreground: '#17302A',
+    background: '#0D1713',
+    foreground: '#E7F0E9',
 
-    card: '#FAF6EC',
-    cardForeground: '#17302A',
+    card: '#14221B',
+    cardForeground: '#E7F0E9',
 
-    primary: '#1F4A3C',
-    primaryForeground: '#F6F1E4',
+    primary: '#73C98F',
+    primaryForeground: '#08110B',
 
-    secondary: '#E3E8DC',
-    secondaryForeground: '#1F4A3C',
+    secondary: '#1C3025',
+    secondaryForeground: '#C7E2CE',
 
-    muted: '#E8E1D2',
-    mutedForeground: '#6A7067',
+    muted: '#19271F',
+    mutedForeground: '#9BAEA0',
 
-    accent: '#DE8257',
-    accentForeground: '#2A140A',
+    accent: '#D9A15A',
+    accentForeground: '#171006',
 
-    destructive: '#B2452F',
-    destructiveForeground: '#FBF3EA',
+    destructive: '#E77C6A',
+    destructiveForeground: '#1B0805',
 
-    border: '#DCD3BF',
-    input: '#D6CCB6',
+    border: '#2B4033',
+    input: '#385344',
 
-    // Night surfaces for calls
-    night: '#0F1E19',
-    nightCard: '#1A2E27',
-    nightForeground: '#EDE6D6',
-    nightMuted: '#8FA197',
-    live: '#5FA77F',
+    night: '#08110D',
+    nightCard: '#122019',
+    nightForeground: '#E7F0E9',
+    nightMuted: '#9BAEA0',
+    live: '#83D99B',
   },
-  radius: 18,
+  radius: 8,
 };
 
 export default colors;

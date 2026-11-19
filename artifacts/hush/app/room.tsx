@@ -29,6 +29,7 @@ export default function Room() {
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const [members, setMembers] = useState(false);
+  const [commandNotice, setCommandNotice] = useState<string | null>(null);
 
   useEffect(() => { if (status !== 'joined') router.replace('/'); }, [status]);
 
@@ -56,9 +57,55 @@ export default function Room() {
     ]);
   };
 
+  const runRoomCommand = (raw: string) => {
+    const command = raw.trim().toLowerCase();
+    if (!command.startsWith('/')) return false;
+    switch (command) {
+      case '/help':
+        setCommandNotice('Commands: /members · /key · /voice · /video · /file · /privacy · /leave');
+        break;
+      case '/members':
+        setMembers(true);
+        setCommandNotice('Showing the people in this room.');
+        break;
+      case '/key':
+        setShowKey((current) => !current);
+        setCommandNotice('Room key visibility toggled. Share it only with people you trust.');
+        break;
+      case '/voice':
+      case '/call':
+        call(false);
+        setCommandNotice('Starting a voice call.');
+        break;
+      case '/video':
+        call(true);
+        setCommandNotice('Starting a video call.');
+        break;
+      case '/file':
+        setCommandNotice('Choose a file to send. Files are limited to 20 MB.');
+        void h.pickFile();
+        break;
+      case '/privacy':
+        setCommandNotice('Opening the privacy notes.');
+        router.push('/privacy');
+        break;
+      case '/leave':
+        setCommandNotice(null);
+        leave();
+        break;
+      default:
+        setCommandNotice('Unknown room command. Type /help for the menu.');
+    }
+    return true;
+  };
+
   const send = () => {
     const t = text.trim();
     if (!t) return;
+    if (runRoomCommand(t)) {
+      setText('');
+      return;
+    }
     h.sendText(t);
     setText('');
   };
@@ -107,7 +154,7 @@ export default function Room() {
       <View style={[styles.header, { paddingTop: top + 8, borderColor: c.border }]}>
         <View style={styles.headRow}>
           <Press testID="open-members" onPress={() => setMembers(true)} style={styles.flex} haptic={false}>
-            <Text style={[styles.title, { color: c.foreground }]}>This room</Text>
+            <Text style={[styles.title, { color: c.foreground }]}>hush://room</Text>
             <View style={styles.statusRow}>
               {online > 0
                 ? <View style={[styles.dot, { backgroundColor: c.live }]} />
@@ -199,8 +246,8 @@ export default function Room() {
           <TextInput
             testID="composer"
             value={text}
-            onChangeText={setText}
-            placeholder={online > 0 ? 'Say something' : 'Write while you wait'}
+            onChangeText={(value) => { setText(value); if (commandNotice) setCommandNotice(null); }}
+            placeholder={online > 0 ? 'Message · /help for commands' : 'Write while you wait'}
             placeholderTextColor={c.mutedForeground}
             multiline
             maxLength={4000}
@@ -209,6 +256,11 @@ export default function Room() {
           <Press testID="send" onPress={send} disabled={!text.trim()} style={[styles.send, { backgroundColor: text.trim() ? c.accent : c.muted }]} accessibilityLabel="Send">
             <Feather name="arrow-up" size={20} color={text.trim() ? c.accentForeground : c.mutedForeground} />
           </Press>
+        </View>
+        <View style={styles.commandHelp}>
+          <Text style={[styles.commandHelpText, { color: commandNotice ? c.accent : c.mutedForeground }]}>
+            {commandNotice ?? 'Messages are encrypted · Type /help for room commands'}
+          </Text>
         </View>
       </KeyboardAvoidingView>
 
@@ -243,12 +295,12 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: { paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, gap: 10 },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { fontFamily: fonts.display, fontSize: 24, letterSpacing: -0.4 },
+  title: { fontFamily: mono, fontSize: 15, fontWeight: '700', letterSpacing: -0.3 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
   dot: { width: 7, height: 7, borderRadius: 4, marginHorizontal: 5 },
   statusText: { fontFamily: fonts.medium, fontSize: 13 },
   iconBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  keyBar: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 14, paddingLeft: 12, height: 44 },
+  keyBar: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 6, paddingLeft: 12, height: 44 },
   keyText: { fontFamily: mono, fontSize: 13 },
   keyAction: { width: 40, height: 44, alignItems: 'center', justifyContent: 'center' },
   banner: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
@@ -257,7 +309,7 @@ const styles = StyleSheet.create({
   emptyWrap: { flexGrow: 1, justifyContent: 'center', padding: 32 },
   empty: { alignItems: 'center', gap: 10 },
   emptyMark: { width: 72, height: 72, borderRadius: 36, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  emptyTitle: { fontFamily: fonts.display, fontSize: 26 },
+  emptyTitle: { fontFamily: mono, fontSize: 19, fontWeight: '700' },
   emptyBody: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, textAlign: 'center', maxWidth: 300 },
   emptyBtn: { flexDirection: 'row', gap: 8, alignItems: 'center', borderRadius: 22, paddingHorizontal: 18, height: 44, marginTop: 10 },
   emptyBtnText: { fontFamily: fonts.semibold, fontSize: 15 },
@@ -265,10 +317,10 @@ const styles = StyleSheet.create({
   right: { alignSelf: 'flex-end', alignItems: 'flex-end' },
   left: { alignSelf: 'flex-start', alignItems: 'flex-start' },
   author: { fontFamily: fonts.semibold, fontSize: 12, marginBottom: 4, marginLeft: 6 },
-  bubble: { borderRadius: 20, paddingHorizontal: 14, paddingTop: 9, paddingBottom: 6 },
+  bubble: { borderRadius: 8, paddingHorizontal: 14, paddingTop: 9, paddingBottom: 6 },
   msgText: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
   time: { fontFamily: fonts.body, fontSize: 10, alignSelf: 'flex-end', marginTop: 2 },
-  fileCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 18, padding: 10, minWidth: 240 },
+  fileCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 8, padding: 10, minWidth: 240 },
   fileIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   fileName: { fontFamily: fonts.semibold, fontSize: 14 },
   fileMeta: { fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
@@ -280,8 +332,10 @@ const styles = StyleSheet.create({
   progressFill: { height: 4, width: '100%' },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 12, paddingTop: 10, borderTopWidth: 1 },
   attach: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  input: { flex: 1, minHeight: 44, maxHeight: 130, borderRadius: 22, borderWidth: 1, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 11, fontFamily: fonts.body, fontSize: 16 },
+  input: { flex: 1, minHeight: 44, maxHeight: 130, borderRadius: 6, borderWidth: 1, paddingHorizontal: 14, paddingTop: 11, paddingBottom: 11, fontFamily: mono, fontSize: 13 },
   send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  commandHelp: { minHeight: 26, justifyContent: 'center', paddingHorizontal: 16, paddingBottom: 4 },
+  commandHelpText: { fontFamily: mono, fontSize: 10, lineHeight: 15 },
   scrim: { flex: 1, backgroundColor: 'rgba(15,30,25,0.4)', justifyContent: 'flex-end' },
   sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, paddingTop: 10 },
   grab: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
