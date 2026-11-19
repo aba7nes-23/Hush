@@ -1,0 +1,2 @@
+- [Hush privacy scope](hush-privacy.md) — native iOS/Android, account-free rooms and memory-only history are explicit product requirements.
+- [OpenAPI request naming](openapi-naming.md) — name request object schemas to avoid Orval schema/type barrel collisions.

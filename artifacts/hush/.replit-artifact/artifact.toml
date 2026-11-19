@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/"
+title = "Hush"
+description = "Account-free ephemeral private rooms for encrypted peer-to-peer conversations, files and calls on iOS and Android. Conversation history and room keys stay in memory."
+version = "1.0.0"
+id = "artifacts/hush"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 24656
+
+[services.development]
+run = "pnpm --filter @workspace/hush run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hush", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/hush", "run", "serve" ]
+
+[services.env]
+PORT = "24656"
+BASE_PATH = "/"

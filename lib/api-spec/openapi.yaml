@@ -11,6 +11,73 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /rooms:
+    post:
+      operationId: enterRoom
+      summary: Create or join an ephemeral room using a SHA-256 key fingerprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomEntry"
+      responses:
+        "200":
+          description: In-memory membership, bearer token and existing peers
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, peerId, peers]
+                properties:
+                  token: {type: string}
+                  peerId: {type: string}
+                  peers:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, username]
+                      properties:
+                        id: {type: string}
+                        username: {type: string}
+  /rooms/events:
+    get:
+      operationId: pollRoomEvents
+      summary: Drain bounded transient signaling events; requires membership bearer token
+      responses:
+        "200":
+          description: Signaling events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events: {type: array, items: {type: object, additionalProperties: true}}
+  /rooms/signal:
+    post:
+      operationId: signalPeer
+      summary: Forward encrypted WebRTC signaling to another member
+      responses:
+        "204": {description: Forwarded}
+  /rooms/leave:
+    post:
+      operationId: leaveRoom
+      responses:
+        "204": {description: Membership and empty rooms removed}
+  /rooms/ice:
+    get:
+      operationId: getRoomIce
+      summary: Short-lived TURN credentials, active members only
+      responses:
+        "200":
+          description: ICE configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  relayAvailable: {type: boolean}
+                  iceServers: {type: array, items: {type: object, additionalProperties: true}}
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +93,13 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    RoomEntry:
+      type: object
+      required: [roomHash, username, create]
+      properties:
+        roomHash: {type: string, pattern: '^[a-f0-9]{64}$'}
+        username: {type: string, minLength: 1, maxLength: 24}
+        create: {type: boolean}
     HealthStatus:
       type: object
       properties:
