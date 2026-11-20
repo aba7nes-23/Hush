@@ -9,6 +9,7 @@ import {
 } from 'react';
 import Engine from '@/components/Engine';
 import type { EngineCommand, EngineEvent } from '@/context/types';
+import { trackEvent } from '@/lib/analytics';
 
 export type Peer = { id: string; username: string; connected: boolean };
 export type Item =
@@ -60,6 +61,24 @@ function asTime(value: unknown) {
   return Number.isNaN(parsed) ? Date.now() : parsed;
 }
 
+function classifyRoomFailure(value: unknown) {
+  if (typeof value !== 'string') return 'other';
+  const message = value.toLowerCase();
+
+  if (message.includes('private room key') || message.includes('valid room key')) return 'invalid_key';
+  if (message.includes('room not found') || message.includes('room does not exist')) return 'room_unavailable';
+  if (message.includes('username is already in the room')) return 'name_taken';
+  if (message.includes('username of 1') || message.includes('choose a username')) return 'invalid_name';
+  if (message.includes('relay') || message.includes('account unavailable')) return 'relay_unavailable';
+  if (message.includes('does not support secure') || message.includes('not available in this preview')) {
+    return 'unsupported_device';
+  }
+  if (message.includes('network') || message.includes('connection') || message.includes('retry') || message.includes('timeout')) {
+    return 'connection_failed';
+  }
+  return 'other';
+}
+
 function toBase64(bytes: Uint8Array) {
   let binary = '';
   for (let offset = 0; offset < bytes.length; offset += 0x8000) {
@@ -72,6 +91,10 @@ export function HushProvider({ children }: { children: ReactNode }) {
   const postRef = useRef<((command: EngineCommand) => void) | null>(null);
   const readyRef = useRef(false);
   const queued = useRef<EngineCommand[]>([]);
+  const pendingRoomActionRef = useRef<'create' | 'join' | null>(null);
+  const hasConnectedPeersRef = useRef(false);
+  const callRef = useRef<CallState | null>(null);
+  const callDirectionRef = useRef<'incoming' | 'outgoing' | 'unknown'>('unknown');
   const [engineReady, setEngineReady] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [me, setMe] = useState<HushContextValue['me']>(null);
@@ -106,6 +129,10 @@ export function HushProvider({ children }: { children: ReactNode }) {
     setMuted(false);
     setCameraOn(true);
     setReconnecting(false);
+    pendingRoomActionRef.current = null;
+    hasConnectedPeersRef.current = false;
+    callRef.current = null;
+    callDirectionRef.current = 'unknown';
   }, []);
 
   const onEvent = useCallback(
@@ -120,6 +147,13 @@ export function HushProvider({ children }: { children: ReactNode }) {
           break;
         }
         case 'joined':
+          if (pendingRoomActionRef.current === 'create') {
+            trackEvent('room_created');
+          } else if (pendingRoomActionRef.current === 'join') {
+            trackEvent('room_join_succeeded');
+          }
+          pendingRoomActionRef.current = null;
+          hasConnectedPeersRef.current = false;
           setMe({
             key: asString(event.key),
             peerId: asString(event.peerId),
@@ -130,8 +164,16 @@ export function HushProvider({ children }: { children: ReactNode }) {
           break;
         case 'peers':
           if (Array.isArray(event.peers)) {
+            const peerRows = (event.peers as Record<string, unknown>[]).slice(0, 8);
+            const connectedCount = peerRows.filter(
+              (peer) => peer !== null && typeof peer === 'object' && peer.connected === true,
+            ).length;
+            if (connectedCount > 0 && !hasConnectedPeersRef.current) {
+              trackEvent('peer_connected', { connected_peers: connectedCount });
+            }
+            hasConnectedPeersRef.current = connectedCount > 0;
             setPeers(
-              (event.peers as Record<string, unknown>[]).slice(0, 8).map((peer) => ({
+              peerRows.map((peer) => ({
                 id: asString(peer.id),
                 username: asString(peer.username, 'someone'),
                 connected: !!peer.connected,
@@ -174,20 +216,48 @@ export function HushProvider({ children }: { children: ReactNode }) {
         }
         case 'call': {
           const callState = asString(event.state) as CallState['state'];
+          const previousCall = callRef.current;
           if (callState === 'ended') {
+            if (previousCall && previousCall.state !== 'ended') {
+              trackEvent('call_ended', {
+                mode: previousCall.video ? 'video' : 'voice',
+                direction: callDirectionRef.current,
+                outcome: previousCall.state === 'active' ? 'connected' : 'not_connected',
+              });
+            }
+            callRef.current = previousCall ? { ...previousCall, state: 'ended' } : null;
             setCall((current) => (current ? { ...current, state: 'ended' } : null));
             window.setTimeout(
-              () => setCall((current) => (current?.state === 'ended' ? null : current)),
+              () => {
+                setCall((current) => (current?.state === 'ended' ? null : current));
+                if (callRef.current?.state === 'ended') {
+                  callRef.current = null;
+                  callDirectionRef.current = 'unknown';
+                }
+              },
               1400,
             );
             setMuted(false);
             setCameraOn(true);
           } else {
-            setCall((current) => ({
+            const nextCall: CallState = {
               state: callState,
-              video: typeof event.video === 'boolean' ? event.video : current?.video ?? false,
-              username: typeof event.username === 'string' ? event.username : current?.username,
-            }));
+              video: typeof event.video === 'boolean' ? event.video : previousCall?.video ?? false,
+              username: typeof event.username === 'string' ? event.username : previousCall?.username,
+            };
+            if (callState === 'incoming') callDirectionRef.current = 'incoming';
+            if (
+              callState === 'active'
+              && previousCall
+              && (previousCall.state === 'calling' || previousCall.state === 'incoming')
+            ) {
+              trackEvent('call_accepted', {
+                mode: nextCall.video ? 'video' : 'voice',
+                direction: callDirectionRef.current,
+              });
+            }
+            callRef.current = nextCall;
+            setCall(nextCall);
           }
           break;
         }
@@ -201,6 +271,13 @@ export function HushProvider({ children }: { children: ReactNode }) {
           resetRoom();
           break;
         case 'error':
+          if (pendingRoomActionRef.current) {
+            const action = pendingRoomActionRef.current;
+            trackEvent(`room_${action}_failed`, {
+              reason: classifyRoomFailure(event.message),
+            });
+            pendingRoomActionRef.current = null;
+          }
           setError(asString(event.message, 'Something went wrong.'));
           setTransfer(null);
           setStatus((current) => (current === 'connecting' ? 'idle' : current));
@@ -214,6 +291,10 @@ export function HushProvider({ children }: { children: ReactNode }) {
     (username: string) => {
       setError(null);
       setStatus('connecting');
+      pendingRoomActionRef.current = 'create';
+      hasConnectedPeersRef.current = false;
+      callRef.current = null;
+      callDirectionRef.current = 'unknown';
       post({ type: 'create', username, forceRelay });
     },
     [forceRelay, post],
@@ -223,6 +304,10 @@ export function HushProvider({ children }: { children: ReactNode }) {
     (username: string, key: string) => {
       setError(null);
       setStatus('connecting');
+      pendingRoomActionRef.current = 'join';
+      hasConnectedPeersRef.current = false;
+      callRef.current = null;
+      callDirectionRef.current = 'unknown';
       post({ type: 'join', username, key, forceRelay });
     },
     [forceRelay, post],
@@ -295,6 +380,9 @@ export function HushProvider({ children }: { children: ReactNode }) {
       pickFile,
       save,
       startCall: (video) => {
+         callDirectionRef.current = 'outgoing';
+         callRef.current = { state: 'calling', video };
+         trackEvent('call_started', { mode: video ? 'video' : 'voice' });
         setCameraOn(video);
         post({ type: 'call', video });
       },
@@ -312,6 +400,16 @@ export function HushProvider({ children }: { children: ReactNode }) {
         setCameraOn(!cameraOn);
       },
       endCall: () => {
+         const currentCall = callRef.current;
+         if (currentCall && currentCall.state !== 'ended') {
+           trackEvent('call_ended', {
+             mode: currentCall.video ? 'video' : 'voice',
+             direction: callDirectionRef.current,
+             outcome: currentCall.state === 'active' ? 'connected' : 'not_connected',
+           });
+         }
+         callRef.current = null;
+         callDirectionRef.current = 'unknown';
         post({ type: 'endCall' });
         setCall(null);
         setMuted(false);

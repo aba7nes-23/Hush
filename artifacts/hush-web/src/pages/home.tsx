@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'wouter';
 import { ArrowRight, AudioLines, Command, LockKeyhole, Radio, Shield, Sparkles } from 'lucide-react';
 import { useHush } from '@/context/HushContext';
+import { trackEvent } from '@/lib/analytics';
 
 function Brand() {
   return (
@@ -30,13 +31,15 @@ export default function Home() {
     if (hush.status === 'joined') setLocation('/room');
   }, [hush.status, setLocation]);
 
-  const validateName = () => {
+  const validateName = (action: 'create' | 'join') => {
     const clean = username.trim();
     if (!clean) {
+      trackEvent(`room_${action}_failed`, { reason: 'missing_name' });
       setMessage('Choose a temporary name to continue.');
       return null;
     }
     if (clean.length > 24) {
+      trackEvent(`room_${action}_failed`, { reason: 'invalid_name' });
       setMessage('Names can be up to 24 characters.');
       return null;
     }
@@ -45,9 +48,11 @@ export default function Home() {
   };
 
   const createRoom = (nameOverride?: string) => {
-    const clean = nameOverride?.trim() || validateName();
+    trackEvent('room_create_attempted');
+    const clean = nameOverride?.trim() || validateName('create');
     if (!clean) return;
     if (clean.length > 24) {
+      trackEvent('room_create_failed', { reason: 'invalid_name' });
       setMessage('Names can be up to 24 characters.');
       return;
     }
@@ -57,10 +62,12 @@ export default function Home() {
   };
 
   const joinRoom = (keyOverride?: string, nameOverride?: string) => {
-    const cleanName = nameOverride?.trim() || validateName();
+    trackEvent('room_join_attempted');
+    const cleanName = nameOverride?.trim() || validateName('join');
     const key = (keyOverride ?? roomKey).trim();
     if (!cleanName) return;
     if (!/^hush_[A-Za-z0-9_-]{43}$/.test(key)) {
+      trackEvent('room_join_failed', { reason: 'invalid_key_format' });
       setMessage('Enter the full room key: hush_ followed by 43 characters.');
       return;
     }
