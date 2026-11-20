@@ -1,0 +1,19 @@
+kind = "design-system"
+previewPath = "/hush-design-system/"
+title = "Hush Design System"
+description = "A reusable arcade-terminal design system for Hush: a browser-based private room for temporary conversations, file sharing, and calls."
+version = "1.0.0"
+id = "artifacts/hush-design-system"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/hush-design-system/" ]
+localPort = 18874
+
+[services.development]
+run = "pnpm --filter @workspace/hush-design-system run dev"
+
+[services.env]
+PORT = "18874"
+BASE_PATH = "/hush-design-system/"
