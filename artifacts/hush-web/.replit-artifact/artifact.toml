@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Hush"
+description = "A browser-based private room for account-free, temporary encrypted conversations, file sharing and calls. Room keys and conversation history stay in memory."
+version = "1.0.0"
+id = "artifacts/hush-web"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21376
+
+[services.development]
+run = "pnpm --filter @workspace/hush-web run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hush-web", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/hush-web/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21376"
+BASE_PATH = "/"

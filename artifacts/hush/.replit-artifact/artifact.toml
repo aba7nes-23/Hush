@@ -1,7 +1,7 @@
 kind = "mobile"
-previewPath = "/"
-title = "Hush"
-description = "Account-free ephemeral private rooms for encrypted peer-to-peer conversations, files and calls on iOS and Android. Conversation history and room keys stay in memory."
+previewPath = "/hush-mobile-archive/"
+title = "Hush Mobile Archive"
+description = "Archived native Hush build. The active, website-only Hush experience is served at the root path."
 version = "1.0.0"
 id = "artifacts/hush"
 router = "expo-domain"
@@ -9,7 +9,7 @@ router = "expo-domain"
 [[services]]
 name = "expo"
 ensurePreviewReachable = "/status"
-paths = [ "/" ]
+paths = [ "/hush-mobile-archive/" ]
 localPort = 24656
 
 [services.development]
@@ -21,4 +21,4 @@ run = [ "pnpm", "--filter", "@workspace/hush", "run", "serve" ]
 
 [services.env]
 PORT = "24656"
-BASE_PATH = "/"
+BASE_PATH = "/hush-mobile-archive/"
