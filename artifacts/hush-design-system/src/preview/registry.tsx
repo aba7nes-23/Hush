@@ -13,8 +13,14 @@ function lazyPage(load: () => Promise<ComponentType>) {
 const BrandDemo = lazyPage(() =>
   import('./demos/brand').then(({ BrandDemo }) => BrandDemo),
 );
+const CallControlsDemo = lazyPage(() =>
+  import('./demos/call-controls').then(({ CallControlsDemo }) => CallControlsDemo),
+);
 const ButtonDemo = lazyPage(() =>
   import('./demos/button').then(({ ButtonDemo }) => ButtonDemo),
+);
+const FeatureModuleDemo = lazyPage(() =>
+  import('./demos/feature-module').then(({ FeatureModuleDemo }) => FeatureModuleDemo),
 );
 const InputDemo = lazyPage(() =>
   import('./demos/input').then(({ InputDemo }) => InputDemo),
@@ -24,6 +30,9 @@ const MessageDemo = lazyPage(() =>
 );
 const PanelDemo = lazyPage(() =>
   import('./demos/panel').then(({ PanelDemo }) => PanelDemo),
+);
+const PrivacyDisclosureRowDemo = lazyPage(() =>
+  import('./demos/privacy-disclosure-row').then(({ PrivacyDisclosureRowDemo }) => PrivacyDisclosureRowDemo),
 );
 
 export type PreviewEntry = {
@@ -60,6 +69,17 @@ export const NAV_GROUPS: NavGroup[] = [
         name: 'Brand lockup',
         description: 'The Hush text wordmark with its AudioLines icon.',
         Page: BrandDemo,
+      },
+    ],
+  },
+  {
+    name: 'Content',
+    entries: [
+      {
+        id: 'feature-module',
+        name: 'Feature module',
+        description: 'The three boxed value propositions from Hush’s home screen.',
+        Page: FeatureModuleDemo,
       },
     ],
   },
@@ -126,6 +146,28 @@ export const NAV_GROUPS: NavGroup[] = [
         name: 'Message item',
         description: 'Incoming, outgoing, text, and file message states.',
         Page: MessageDemo,
+      },
+    ],
+  },
+  {
+    name: 'Calls',
+    entries: [
+      {
+        id: 'call-controls',
+        name: 'Call controls',
+        description: 'Incoming, active, outgoing, and floating video-call actions.',
+        Page: CallControlsDemo,
+      },
+    ],
+  },
+  {
+    name: 'Privacy',
+    entries: [
+      {
+        id: 'privacy-disclosure-row',
+        name: 'Disclosure row',
+        description: 'A numbered statement with keep or limit emphasis.',
+        Page: PrivacyDisclosureRowDemo,
       },
     ],
   },

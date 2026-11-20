@@ -22,9 +22,9 @@
 | 3 | Terminal panel | [terminal-panel.md](components/terminal-panel.md) | Native section container; no blocker | Repeated console, conversation, side-card, and connecting surfaces | 1 | implemented |
 | 4 | Brand lockup | [brand-lockup.md](components/brand-lockup.md) | `lucide-react` `AudioLines`; no standalone logo file | Reused in home, room, and privacy navigation | 1 | implemented |
 | 5 | Message item | [message-item.md](components/message-item.md) | `lucide-react` file/download icons; no blocker | Core room content; supports text and received-file states | 1 | implemented |
-| 6 | Call controls | [call-controls.md](components/call-controls.md) | Source room state is replaced with explicit callbacks; no blocker | Voice/video controls and floating video actions | 2 | pending |
-| 7 | Feature module | [feature-module.md](components/feature-module.md) | Native article container; no blocker | Three feature summaries on the home screen | 2 | pending |
-| 8 | Privacy disclosure row | [privacy-disclosure-row.md](components/privacy-disclosure-row.md) | Native article container; no blocker | Numbered disclosure list on the privacy screen | 2 | pending |
+| 6 | Call controls | [call-controls.md](components/call-controls.md) | Source room state is replaced with explicit callbacks; no blocker | Voice/video controls and floating video actions | 2 | implemented |
+| 7 | Feature module | [feature-module.md](components/feature-module.md) | Native article container; no blocker | Three feature summaries on the home screen | 2 | implemented |
+| 8 | Privacy disclosure row | [privacy-disclosure-row.md](components/privacy-disclosure-row.md) | Native article container; no blocker | Numbered disclosure list on the privacy screen | 2 | implemented |
 
 ## Chunk plan
 

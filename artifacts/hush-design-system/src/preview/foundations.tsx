@@ -1,8 +1,12 @@
+import { LockKeyhole, Radio, Sparkles } from 'lucide-react';
 import { BrandLockup } from '../components/ui/brand';
 import { Button } from '../components/ui/button';
+import { CallControls, type CallControlState } from '../components/ui/call-controls';
+import { FeatureModule } from '../components/ui/feature-module';
 import { Input } from '../components/ui/input';
 import { MessageItem } from '../components/ui/message';
 import { TerminalPanel } from '../components/ui/panel';
+import { PrivacyDisclosureRow } from '../components/ui/privacy-disclosure-row';
 import { Guidelines } from './parts';
 
 const CORE_COLORS = [
@@ -20,6 +24,16 @@ const SUPPORTING_COLORS = [
 ] as const;
 
 const SPACING = [4, 8, 12, 16, 24];
+
+const OVERVIEW_CALL: CallControlState = {
+  state: 'active',
+  username: 'Rin',
+  video: false,
+  muted: false,
+  cameraOn: false,
+  onToggleMute: () => undefined,
+  onEnd: () => undefined,
+};
 
 function Swatch({ name, className }: { name: string; className: string }) {
   return (
@@ -104,6 +118,41 @@ export function OverviewPage() {
           </div>
         </TerminalPanel>
       </section>
+
+      <section className="space-y-4">
+        <div className="max-w-md">
+          <CallControls call={OVERVIEW_CALL} />
+        </div>
+        <PrivacyDisclosureRow
+          number={1}
+          tone="keep"
+          title="Messages live in memory"
+          body="Messages and received files stay in working memory, not a saved inbox. Explicitly saving or sharing a received file creates a copy outside this promise."
+        />
+      </section>
+
+      <TerminalPanel title="FEATURE MODULES" className="p-4">
+        <div className="grid gap-3 pt-5 md:grid-cols-2 xl:grid-cols-3">
+          <FeatureModule
+            accent="cyan"
+            icon={LockKeyhole}
+            title="Only the people invited"
+            description="Share a one-time room key directly with the people you mean to reach."
+          />
+          <FeatureModule
+            accent="magenta"
+            icon={Radio}
+            title="Direct when it can be"
+            description="Encrypted peer-to-peer messages, file sharing, and voice or video calls."
+          />
+          <FeatureModule
+            accent="yellow"
+            icon={Sparkles}
+            title="Temporary by design"
+            description="Room content lives in memory. Leave or restart, and Hush clears its local history."
+          />
+        </div>
+      </TerminalPanel>
     </div>
   );
 }
